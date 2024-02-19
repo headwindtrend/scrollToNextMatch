@@ -1,0 +1,12 @@
+[
+	{ "button": "scroll_down", "modifiers": ["button5"], "command": "find_under" },
+	{ "button": "scroll_up", "modifiers": ["button5"], "command": "find_under_prev" },
+	{ "button": "button2", "modifiers": ["button5"], "command": "undo" },
+	{ "button": "button1", "modifiers": ["button5"], "command": "redo" },
+	{ "button": "button2", "modifiers": ["button4"], "command": "duplicate_line" },
+	{ "button": "scroll_down", "modifiers": ["button4"], "command": "smart_match" },
+	{ "button": "scroll_up", "modifiers": ["button4"], "command": "smart_match", "args": {"backward": true} },
+	{ "button": "scroll_down", "modifiers": ["shift"], "command": "next_match" },
+	{ "button": "scroll_up", "modifiers": ["shift"], "command": "next_match", "args": {"backward": true} },
+	{ "button": "button1", "modifiers": ["button2"], "command": "log_backtick", "context": [{"key": "selector", "operator": "equal", "operand": "source.text.plain"}] }
+]
