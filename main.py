@@ -3,7 +3,7 @@ import sublime, sublime_plugin, re
 class smartMatchCommand(sublime_plugin.WindowCommand):
 	def run(self, backward=False, interactive=False):
 		view = self.window.active_view()
-		mySearchTerm = re.sub(r"\t+", r"\\t*", re.sub(" +", " *", re.sub(r"['\"`]", "['\"`]", re.sub(r"([^\w\s'\"`])", r"_bAckslAsh_\1", re.sub(r"([^\w \t'\"`]+)", r"_tAb_spAce_\1_tAb_spAce_", view.substr(view.sel()[0])))))).replace("_tAb_spAce_", r"[\t ]*").replace("_bAckslAsh_", "\\").replace(r"\<", "<").replace(r"\>", ">")
+		mySearchTerm = re.sub("(?:_tAb_spAce_)+", r"[\\t ]*", re.sub(r"\t+", r"\\t*", re.sub(" +", " *", re.sub(r"['\"`]", "['\"`]", re.sub(r"([^\w\s<'\"`>])", r"_bAckslAsh_\1", re.sub(r"([^\w \t<'\"`>])", r"_tAb_spAce_\1_tAb_spAce_", view.substr(view.sel()[0]))))))).replace("_bAckslAsh_", "\\")
 		self.window.run_command('show_panel', {
 			'panel': 'find',
 			'regex': True,
