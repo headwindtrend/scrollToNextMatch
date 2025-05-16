@@ -2,8 +2,51 @@ import sublime, sublime_plugin, re
 
 class smartMatchCommand(sublime_plugin.WindowCommand):
 	def run(self, backward=False, interactive=False):
+		def optimize_search_term(text):
+			"""Optimized transformation of selection into regex pattern for smart searching."""
+
+			# Precompiled regex patterns (for efficiency)
+			TAB_SPACE_PATTERN = re.compile(r"([^\w \t<'\"`>])")
+			BACKSLASH_PATTERN = re.compile(r"([^\w\s<'\"`>])")
+			QUOTE_PATTERN = re.compile(r"['\"`]")
+			SPACE_PATTERN = re.compile(" +")
+			TAB_PATTERN = re.compile(r"\t+")
+			PROXY_PATTERN = re.compile("(?:_tAb_spAce_)+")
+
+			# Perform substitutions efficiently
+			text = TAB_SPACE_PATTERN.sub(r"_tAb_spAce_\1_tAb_spAce_", text)  # Handle spacing around symbols
+			text = BACKSLASH_PATTERN.sub(r"_bAckslAsh_\1", text)  # Escape special symbols
+			text = QUOTE_PATTERN.sub("['\"`]", text)  # Normalize quotes
+			text = SPACE_PATTERN.sub(" *", text)  # Flexible spaces
+			text = TAB_PATTERN.sub(r"\\t*", text)  # Handle tabs
+			text = PROXY_PATTERN.sub(r"[\\t ]*", text)  # Kill proxies
+			
+			return text.replace("_bAckslAsh_", "\\")
+
 		view = self.window.active_view()
-		mySearchTerm = re.sub("(?:_tAb_spAce_)+", r"[\\t ]*", re.sub(r"\t+", r"\\t*", re.sub(" +", " *", re.sub(r"['\"`]", "['\"`]", re.sub(r"([^\w\s<'\"`>])", r"_bAckslAsh_\1", re.sub(r"([^\w \t<'\"`>])", r"_tAb_spAce_\1_tAb_spAce_", view.substr(view.sel()[0]))))))).replace("_bAckslAsh_", "\\")
+		sel = view.sel()
+		if not sel:
+			return
+
+		word_region = view.word(sel[0])  # Get selected word
+		pattern = view.substr(word_region)  # Extract text
+		if pattern.endswith("Command"):
+			pattern = pattern[:-7]
+
+		# Validation: Check if the word is a proper snake_case or CamelCase
+		is_snake_case = re.search(r'^[a-z]+(_[a-z]+)+$', pattern)
+		is_camel_case = re.search(r'^[A-Za-z][a-zA-Z]+$', pattern)
+
+		if is_snake_case:
+			# Convert snake_case to CamelCase equivalent
+			camel_case_version = "".join(word.title() for word in pattern.split("_"))
+			regex_pattern = r'\b' + pattern + r'\b|\b' + camel_case_version
+		elif is_camel_case:
+			# Convert CamelCase to snake_case equivalent
+			snake_case_version = re.sub(r'([a-z])([A-Z])', r'\1_\2', pattern).lower()
+			regex_pattern = r'\b' + pattern + r'|\b' + snake_case_version + r'\b' if snake_case_version != pattern.lower() else pattern
+		else:
+			regex_pattern = optimize_search_term(view.substr(sel[0]))
 		self.window.run_command('show_panel', {
 			'panel': 'find',
 			'regex': True,
@@ -13,7 +56,7 @@ class smartMatchCommand(sublime_plugin.WindowCommand):
 			'in_selection': False,
 			'highlight': True,
 		})
-		self.window.run_command('insert', {'characters': mySearchTerm})
+		self.window.run_command('insert', {'characters': regex_pattern})
 		if not interactive: self.window.run_command('find_prev' if backward else 'find_next', {'close_panel': True})
 
 class nextMatchCommand(sublime_plugin.WindowCommand):
